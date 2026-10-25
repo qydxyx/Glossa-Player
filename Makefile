@@ -20,9 +20,9 @@ app: engine
 	xcodebuild -project Glossa.xcodeproj -scheme Glossa -configuration Debug \
 		-derivedDataPath $(DERIVED) \
 		CODE_SIGN_IDENTITY="-" CODE_SIGNING_ALLOWED=YES
-	mkdir -p "$(APP_DIR)/Contents/Helpers"
+	mkdir -p "$(APP_DIR)/Contents/Helpers" "$(APP_DIR)/Contents/Resources"
 	cp $(ENGINE) "$(APP_DIR)/Contents/Helpers/glossa-engine"
-	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_DIR)/Contents/Helpers/qwen3_asr_sidecar.py"
+	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_DIR)/Contents/Resources/qwen3_asr_sidecar.py"
 
 run: app
 	open "$(APP_DIR)"
@@ -47,9 +47,11 @@ dist:
 	xcodebuild -project Glossa.xcodeproj -scheme Glossa -configuration Release \
 		-derivedDataPath $(DERIVED) \
 		CODE_SIGN_IDENTITY="-" CODE_SIGNING_ALLOWED=YES
-	mkdir -p "$(APP_REL)/Contents/Helpers"
+	mkdir -p "$(APP_REL)/Contents/Helpers" "$(APP_REL)/Contents/Resources"
 	cp $(ENGINE_REL) "$(APP_REL)/Contents/Helpers/glossa-engine"
-	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_REL)/Contents/Helpers/qwen3_asr_sidecar.py"
+	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_REL)/Contents/Resources/qwen3_asr_sidecar.py"
+	codesign --force --sign - "$(APP_REL)/Contents/Helpers/glossa-engine"
+	codesign --force --sign - --entitlements apps/macos/Glossa/Glossa.entitlements "$(APP_REL)"
 	mkdir -p $(DIST)
 	rm -rf $(DIST)/dmgroot
 	mkdir -p $(DIST)/dmgroot
