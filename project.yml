@@ -46,3 +46,5 @@ targets:
         SYSTEM_HEADER_SEARCH_PATHS: /opt/homebrew/include
     entitlements:
       path: apps/macos/Glossa/Glossa.entitlements
+      properties:
+        com.apple.security.cs.disable-library-validation: true
