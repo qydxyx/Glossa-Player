@@ -1,0 +1,48 @@
+name: Glossa
+options:
+  bundleIdPrefix: app.glossa
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CLANG_CXX_LANGUAGE_STANDARD: "gnu++17"
+targets:
+  Glossa:
+    type: application
+    platform: macOS
+    sources:
+      - path: apps/macos/Glossa
+        excludes:
+          - "Resources/.gitkeep"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.glossa.Glossa
+        PRODUCT_NAME: Glossa Player
+        INFOPLIST_KEY_CFBundleDisplayName: Glossa Player
+        INFOPLIST_KEY_CFBundleName: Glossa Player
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_FILE: apps/macos/Glossa/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        HEADER_SEARCH_PATHS: /opt/homebrew/include
+        LIBRARY_SEARCH_PATHS: /opt/homebrew/lib
+        OTHER_LDFLAGS: -lmpv
+        LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks @executable_path/../Helpers /opt/homebrew/lib"
+        SWIFT_OBJC_BRIDGING_HEADER: apps/macos/Glossa/Bridging/Glossa-Bridging-Header.h
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_IDENTITY: "-"
+        COMBINE_HIDPI_IMAGES: YES
+        GCC_PREPROCESSOR_DEFINITIONS: "$(inherited) GL_SILENCE_DEPRECATION=1"
+        DEAD_CODE_STRIPPING: YES
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        SWIFT_STRICT_CONCURRENCY: targeted
+        COMBINE_HIDPI_IMAGES: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) /opt/homebrew/lib"
+        SYSTEM_HEADER_SEARCH_PATHS: /opt/homebrew/include
+    entitlements:
+      path: apps/macos/Glossa/Glossa.entitlements

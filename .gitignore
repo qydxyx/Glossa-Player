@@ -1,0 +1,31 @@
+.DS_Store
+/.build/
+/build/
+/DerivedData/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+*.xcuserstate
+
+/target/
+
+/apps/macos/Glossa.xcodeproj
+*.app
+
+# Models and caches
+/models/
+**/*.bin
+**/*.gguf
+**/*.mlmodelc
+sidecar/qwen3-asr/.venv/
+
+# Secrets
+.env
+.env.*
+
+# Fixtures generated locally
+/fixtures/*.mp4
+/fixtures/*.wav
+/fixtures/*.pcm
+
+/dist/
