@@ -24,6 +24,7 @@ app: engine
 	cp $(ENGINE) "$(APP_DIR)/Contents/Helpers/glossa-engine"
 	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_DIR)/Contents/Resources/qwen3_asr_sidecar.py"
 	bash scripts/bundle-deps.sh "$(APP_DIR)"
+	cp apps/macos/Glossa/Resources/AppIcon.icns "$(APP_DIR)/Contents/Resources/AppIcon.icns"
 	find "$(APP_DIR)/Contents/Frameworks" -type f -exec codesign --force --sign - {} \;
 	codesign --force --sign - "$(APP_DIR)/Contents/Helpers/ffmpeg"
 	codesign --force --sign - "$(APP_DIR)/Contents/Helpers/glossa-engine"
@@ -57,6 +58,7 @@ dist:
 	cp $(ENGINE_REL) "$(APP_REL)/Contents/Helpers/glossa-engine"
 	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_REL)/Contents/Resources/qwen3_asr_sidecar.py"
 	bash scripts/bundle-deps.sh "$(APP_REL)"
+	cp apps/macos/Glossa/Resources/AppIcon.icns "$(APP_REL)/Contents/Resources/AppIcon.icns"
 	find "$(APP_REL)/Contents/Frameworks" -type f -exec codesign --force --sign - {} \;
 	codesign --force --sign - "$(APP_REL)/Contents/Helpers/ffmpeg"
 	codesign --force --sign - "$(APP_REL)/Contents/Helpers/glossa-engine"
