@@ -339,7 +339,7 @@ checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
 
 [[package]]
 name = "glossa-asr"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -360,7 +360,7 @@ dependencies = [
 
 [[package]]
 name = "glossa-engine"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "glossa-asr",
  "glossa-media",
@@ -376,7 +376,7 @@ dependencies = [
 
 [[package]]
 name = "glossa-media"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "thiserror",
  "tokio",
@@ -385,7 +385,7 @@ dependencies = [
 
 [[package]]
 name = "glossa-protocol"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -394,7 +394,7 @@ dependencies = [
 
 [[package]]
 name = "glossa-translate"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "glossa-protocol",
  "reqwest",
