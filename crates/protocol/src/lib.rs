@@ -3,6 +3,14 @@ use uuid::Uuid;
 
 pub const PROTOCOL_VERSION: u32 = 1;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RetranslateItem {
+    pub cue_id: String,
+    pub text: String,
+    #[serde(default)]
+    pub language: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Cue {
     pub id: String,
@@ -87,6 +95,9 @@ pub enum ClientMessage {
     },
     Pause {
         paused: bool,
+    },
+    Retranslate {
+        items: Vec<RetranslateItem>,
     },
     SetAsr {
         engine: String,

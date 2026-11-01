@@ -4,7 +4,7 @@ APP_DIR := build/Build/Products/Debug/Glossa Player.app
 APP_REL := build/Build/Products/Release/Glossa Player.app
 DERIVED := build
 DIST := dist
-VERSION := 1.0.0
+VERSION := 1.0.1
 
 .PHONY: engine app run test fixtures sidecar dist
 
@@ -23,6 +23,12 @@ app: engine
 	mkdir -p "$(APP_DIR)/Contents/Helpers" "$(APP_DIR)/Contents/Resources"
 	cp $(ENGINE) "$(APP_DIR)/Contents/Helpers/glossa-engine"
 	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_DIR)/Contents/Resources/qwen3_asr_sidecar.py"
+	bash scripts/bundle-deps.sh "$(APP_DIR)"
+	find "$(APP_DIR)/Contents/Frameworks" -type f -exec codesign --force --sign - {} \;
+	codesign --force --sign - "$(APP_DIR)/Contents/Helpers/ffmpeg"
+	codesign --force --sign - "$(APP_DIR)/Contents/Helpers/glossa-engine"
+	if [ -f "$(APP_DIR)/Contents/MacOS/Glossa Player.debug.dylib" ]; then codesign --force --sign - "$(APP_DIR)/Contents/MacOS/Glossa Player.debug.dylib"; fi
+	codesign --force --sign - --entitlements apps/macos/Glossa/Glossa.entitlements "$(APP_DIR)"
 
 run: app
 	open "$(APP_DIR)"
@@ -50,7 +56,11 @@ dist:
 	mkdir -p "$(APP_REL)/Contents/Helpers" "$(APP_REL)/Contents/Resources"
 	cp $(ENGINE_REL) "$(APP_REL)/Contents/Helpers/glossa-engine"
 	cp sidecar/qwen3-asr/qwen3_asr_sidecar.py "$(APP_REL)/Contents/Resources/qwen3_asr_sidecar.py"
+	bash scripts/bundle-deps.sh "$(APP_REL)"
+	find "$(APP_REL)/Contents/Frameworks" -type f -exec codesign --force --sign - {} \;
+	codesign --force --sign - "$(APP_REL)/Contents/Helpers/ffmpeg"
 	codesign --force --sign - "$(APP_REL)/Contents/Helpers/glossa-engine"
+	if [ -f "$(APP_REL)/Contents/MacOS/Glossa Player.debug.dylib" ]; then codesign --force --sign - "$(APP_REL)/Contents/MacOS/Glossa Player.debug.dylib"; fi
 	codesign --force --sign - --entitlements apps/macos/Glossa/Glossa.entitlements "$(APP_REL)"
 	mkdir -p $(DIST)
 	rm -rf $(DIST)/dmgroot

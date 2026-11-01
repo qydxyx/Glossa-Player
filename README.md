@@ -11,7 +11,9 @@ Not a port of [LLPlayer](https://github.com/umlx5h/LLPlayer). Same job, native M
 - **Cloud ASR:** Alibaba Bailian (`qwen-audio-3.1-asr-flash-streaming`, `fun-asr-realtime`, `qwen3-asr-flash-realtime`), Gemini 3.5 Transcribe Live
 - **Translation:** DeepL, LibreTranslate, Google, OpenAI, Ollama / LM Studio, any OpenAI-compatible endpoint
 
-Requires **Apple Silicon** and **macOS 14+**. Version **1.0.0**.
+Requires **Apple Silicon** and **macOS 14+**. Version **1.0.1**.
+
+Release builds bundle libmpv and FFmpeg. A local build still needs Homebrew `mpv`, `ffmpeg`, and `pkg-config`.
 
 ## Dev
 

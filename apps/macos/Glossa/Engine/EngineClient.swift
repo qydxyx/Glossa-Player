@@ -7,6 +7,7 @@ enum ClientCommand {
     case setAsr(engine: String, options: [String: Any])
     case setTranslator(engine: String, options: [String: Any])
     case stopAsr
+    case retranslate(items: [(id: String, text: String, language: String?)])
     case shutdown
 
     func json() -> String {
@@ -33,6 +34,13 @@ enum ClientCommand {
             obj["options"] = options
         case .stopAsr:
             obj["type"] = "stop_asr"
+        case .retranslate(let items):
+            obj["type"] = "retranslate"
+            obj["items"] = items.map { item in
+                var row: [String: Any] = ["cue_id": item.id, "text": item.text]
+                if let language = item.language { row["language"] = language }
+                return row
+            }
         case .shutdown:
             obj["type"] = "shutdown"
         }
@@ -92,6 +100,12 @@ final class EngineClient {
         let proc = Process()
         proc.executableURL = url
         proc.arguments = ["--stdio"]
+        var env = ProcessInfo.processInfo.environment
+        let bundledFfmpeg = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/ffmpeg")
+        if FileManager.default.isExecutableFile(atPath: bundledFfmpeg.path) {
+            env["GLOSSA_FFMPEG"] = bundledFfmpeg.path
+        }
+        proc.environment = env
         let inPipe = Pipe()
         let outPipe = Pipe()
         let errPipe = Pipe()

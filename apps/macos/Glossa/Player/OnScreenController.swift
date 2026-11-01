@@ -56,6 +56,8 @@ struct OnScreenController: View {
                         .foregroundStyle(.white.opacity(0.55))
                         .lineLimit(1)
                 }
+                OSCButton(system: "character.bubble") { model.retranslate() }
+                    .help("Retranslate current subtitles")
                 OSCButton(
                     system: "waveform",
                     active: model.asrEnabled

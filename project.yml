@@ -18,20 +18,21 @@ targets:
       - path: apps/macos/Glossa
         excludes:
           - "Resources/.gitkeep"
+          - "Resources/AppIcon-preview.png"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.glossa.Glossa
         PRODUCT_NAME: Glossa Player
         INFOPLIST_KEY_CFBundleDisplayName: Glossa Player
         INFOPLIST_KEY_CFBundleName: Glossa Player
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.0.1"
+        CURRENT_PROJECT_VERSION: "2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_FILE: apps/macos/Glossa/Info.plist
         GENERATE_INFOPLIST_FILE: false
         HEADER_SEARCH_PATHS: /opt/homebrew/include
         LIBRARY_SEARCH_PATHS: /opt/homebrew/lib
-        OTHER_LDFLAGS: -lmpv
+        OTHER_LDFLAGS: "-lmpv -Wl,-headerpad_max_install_names"
         LD_RUNPATH_SEARCH_PATHS: "@executable_path/../Frameworks @executable_path/../Helpers /opt/homebrew/lib"
         SWIFT_OBJC_BRIDGING_HEADER: apps/macos/Glossa/Bridging/Glossa-Bridging-Header.h
         ENABLE_HARDENED_RUNTIME: NO

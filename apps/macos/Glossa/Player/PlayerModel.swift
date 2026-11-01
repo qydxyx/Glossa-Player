@@ -54,7 +54,7 @@ final class PlayerModel {
         currentURL = url
         lastError = nil
         clearSentenceLoop()
-        if let cached = CueCache.load(url: url, engine: SettingsStore.shared.asrEngine.rawValue), !cached.isEmpty {
+        if let cached = CueCache.load(url: url, identity: CueCache.identity()), !cached.isEmpty {
             cues = cached
             asrStatus = "cached"
         } else {
@@ -79,7 +79,8 @@ final class PlayerModel {
     }
 
     func seek(relative seconds: Double) {
-        mpv?.command("seek", args: [String(seconds), "relative"])
+        let target = max(0, timePos + seconds)
+        seek(absolute: target, restartAsr: asrEnabled)
     }
 
     func seek(absolute seconds: Double, restartAsr: Bool = true) {
@@ -154,6 +155,17 @@ final class PlayerModel {
         asrStatus = "idle"
     }
 
+    func retranslate() {
+        let items = cues
+            .filter { !$0.partial && !$0.text.isEmpty }
+            .map { (id: $0.id, text: $0.text, language: $0.language) }
+        guard !items.isEmpty else { return }
+        engine.ensureStarted()
+        engine.send(.setTranslator(engine: SettingsStore.shared.translatorEngine.rawValue, options: SettingsStore.shared.translatorOptions()))
+        engine.send(.retranslate(items: items))
+        asrStatus = "retranslate"
+    }
+
     func importSRT() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.text, UTType(filenameExtension: "srt")].compactMap { $0 }
@@ -184,8 +196,8 @@ final class PlayerModel {
             asrStatus = "ready"
         case .status(let asr, let message):
             asrStatus = message.map { "\(asr) · \($0)" } ?? asr
-            if asr == "done", let url = currentURL {
-                CueCache.save(url: url, engine: SettingsStore.shared.asrEngine.rawValue, cues: cues)
+            if (asr == "done" || (asr == "retranslate" && message == "done")), let url = currentURL {
+                CueCache.save(url: url, identity: CueCache.identity(), cues: cues)
             }
         case .error(let message):
             lastError = message

@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use glossa_asr::{AsrKind, AsrSession};
 use glossa_media::AudioDecoder;
-use glossa_protocol::{sanitize_caption, ClientMessage, ServerMessage, PROTOCOL_VERSION};
+use glossa_protocol::{sanitize_caption, ClientMessage, RetranslateItem, ServerMessage, PROTOCOL_VERSION};
 use glossa_translate::{TranslateRequest, Translator};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::{UnixListener, UnixStream};
@@ -17,6 +17,7 @@ struct AppState {
     translator_options: serde_json::Value,
     job: Option<tokio::task::JoinHandle<()>>,
     cancel: Option<tokio::sync::watch::Sender<bool>>,
+    pause_tx: tokio::sync::watch::Sender<bool>,
 }
 
 #[tokio::main]
@@ -64,6 +65,7 @@ where
     let writer = Arc::new(Mutex::new(writer));
     send(&writer, ServerMessage::Ready { version: PROTOCOL_VERSION }).await;
 
+    let (pause_tx, _) = tokio::sync::watch::channel(false);
     let state = Arc::new(Mutex::new(AppState {
         asr_engine: "whisper".into(),
         asr_options: serde_json::json!({}),
@@ -71,6 +73,7 @@ where
         translator_options: serde_json::json!({}),
         job: None,
         cancel: None,
+        pause_tx,
     }));
 
     while let Some(line) = lines.next_line().await? {
@@ -114,6 +117,8 @@ where
                 send(&writer, ServerMessage::Status { asr: "idle".into(), message: None }).await;
             }
             ClientMessage::Pause { paused } => {
+                let tx = state.lock().await.pause_tx.clone();
+                let _ = tx.send(paused);
                 send(
                     &writer,
                     ServerMessage::Status {
@@ -122,6 +127,18 @@ where
                     },
                 )
                 .await;
+            }
+            ClientMessage::Retranslate { items } => {
+                let translator = {
+                    let st = state.lock().await;
+                    st.translator_engine
+                        .as_ref()
+                        .map(|e| (e.clone(), st.translator_options.clone()))
+                };
+                let writer = writer.clone();
+                tokio::spawn(async move {
+                    retranslate(writer, translator, items).await;
+                });
             }
             ClientMessage::Shutdown => break,
         }
@@ -141,18 +158,35 @@ async fn start_job<W>(
 {
     cancel_job(&state).await;
     let (tx, rx) = tokio::sync::watch::channel(false);
-    let (engine, options, translator) = {
+    let (engine, options, translator, pause_rx) = {
         let mut st = state.lock().await;
         st.cancel = Some(tx);
         let tr = st
             .translator_engine
             .as_ref()
             .map(|e| (e.clone(), st.translator_options.clone()));
-        (st.asr_engine.clone(), st.asr_options.clone(), tr)
+        (
+            st.asr_engine.clone(),
+            st.asr_options.clone(),
+            tr,
+            st.pause_tx.subscribe(),
+        )
     };
 
     let handle = tokio::spawn(async move {
-        if let Err(e) = run_asr(writer, url, start_ms, audio_stream, engine, options, translator, rx).await {
+        if let Err(e) = run_asr(
+            writer,
+            url,
+            start_ms,
+            audio_stream,
+            engine,
+            options,
+            translator,
+            rx,
+            pause_rx,
+        )
+        .await
+        {
             error!("asr job: {e}");
         }
     });
@@ -178,6 +212,7 @@ async fn run_asr<W: tokio::io::AsyncWrite + Unpin + Send>(
     options: serde_json::Value,
     translator: Option<(String, serde_json::Value)>,
     mut cancel: tokio::sync::watch::Receiver<bool>,
+    mut pause: tokio::sync::watch::Receiver<bool>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     send(&writer, ServerMessage::Status { asr: "starting".into(), message: Some(engine.clone()) }).await;
 
@@ -201,7 +236,7 @@ async fn run_asr<W: tokio::io::AsyncWrite + Unpin + Send>(
     let mut recent: Vec<String> = Vec::new();
 
     loop {
-        if *cancel.borrow() {
+        if wait_while_paused(&mut cancel, &mut pause).await {
             break;
         }
         tokio::select! {
@@ -236,6 +271,91 @@ async fn run_asr<W: tokio::io::AsyncWrite + Unpin + Send>(
     }
     decoder.kill().await;
     Ok(())
+}
+
+/// Returns true when the job should stop.
+async fn wait_while_paused(
+    cancel: &mut tokio::sync::watch::Receiver<bool>,
+    pause: &mut tokio::sync::watch::Receiver<bool>,
+) -> bool {
+    loop {
+        if *cancel.borrow() {
+            return true;
+        }
+        if !*pause.borrow() {
+            return false;
+        }
+        tokio::select! {
+            _ = cancel.changed() => {}
+            _ = pause.changed() => {}
+        }
+    }
+}
+
+async fn retranslate<W: tokio::io::AsyncWrite + Unpin + Send>(
+    writer: Arc<Mutex<W>>,
+    translator: Option<(String, serde_json::Value)>,
+    items: Vec<RetranslateItem>,
+) {
+    let Some((engine, options)) = translator else {
+        send(
+            &writer,
+            ServerMessage::Error {
+                message: "no translator configured".into(),
+            },
+        )
+        .await;
+        return;
+    };
+    let translator = Translator::new(&engine, options);
+    for item in items {
+        let Some(text) = sanitize_caption(&item.text) else {
+            continue;
+        };
+        match translator
+            .translate(TranslateRequest {
+                text: text.clone(),
+                src: translator.resolve_src(item.language.as_deref()),
+                tgt: translator.target_lang(),
+                context: vec![],
+            })
+            .await
+        {
+            Ok(translated) => {
+                if let Some(translated) = sanitize_caption(&translated) {
+                    if translated != text {
+                        send(
+                            &writer,
+                            ServerMessage::Translation {
+                                cue_id: item.cue_id,
+                                text: translated,
+                            },
+                        )
+                        .await;
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("retranslate: {e}");
+                send(
+                    &writer,
+                    ServerMessage::Status {
+                        asr: "translate".into(),
+                        message: Some(e.to_string()),
+                    },
+                )
+                .await;
+            }
+        }
+    }
+    send(
+        &writer,
+        ServerMessage::Status {
+            asr: "retranslate".into(),
+            message: Some("done".into()),
+        },
+    )
+    .await;
 }
 
 async fn publish_cues<W: tokio::io::AsyncWrite + Unpin>(

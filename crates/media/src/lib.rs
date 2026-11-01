@@ -116,6 +116,20 @@ impl AudioDecoder {
 }
 
 fn which_ffmpeg() -> Result<PathBuf, MediaError> {
+    if let Ok(explicit) = std::env::var("GLOSSA_FFMPEG") {
+        let p = PathBuf::from(explicit);
+        if p.is_file() {
+            return Ok(p);
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let bundled = dir.join("ffmpeg");
+            if bundled.is_file() {
+                return Ok(bundled);
+            }
+        }
+    }
     let candidates = [
         "ffmpeg",
         "/opt/homebrew/bin/ffmpeg",

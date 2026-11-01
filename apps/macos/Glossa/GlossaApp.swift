@@ -23,6 +23,8 @@ struct GlossaApp: App {
                 .keyboardShortcut("o", modifiers: .command)
                 Button("Import SRT…") { model.importSRT() }
                 Button("Export SRT…") { model.exportSRT() }
+                Button("Retranslate") { model.retranslate() }
+                    .keyboardShortcut("t", modifiers: [.command, .shift])
             }
         }
 
